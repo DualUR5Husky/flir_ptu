@@ -50,7 +50,24 @@ template<typename T>
 T parseResponse(std::string responseBuffer)
 {
   std::string trimmed = responseBuffer.substr(1);
+  ROS_INFO("Trimmed value  %s", trimmed.c_str());
   boost::trim(trimmed);
+  ROS_INFO("Typecasting to %s", __PRETTY_FUNCTION__);
+
+  if (trimmed.empty())
+  {
+    trimmed = "0";
+  }
+
+  // Is it REALLY a double? confirm, if not, make it a "0"
+  char* endptr = 0;
+  strtod(trimmed.c_str(), &endptr);
+  if (*endptr != '\0' || endptr == trimmed.c_str())
+  {
+      trimmed = "0";
+  }
+
+  // Check if the string is a number or a string, this is causing issues on first boot.
   T parsed = lexical_cast<T>(trimmed);
   ROS_DEBUG_STREAM("Parsed response value: " << parsed);
   return parsed;
@@ -167,16 +184,21 @@ int PTU::getLimit(char type, char limType)
 // get position in radians
 float PTU::getPosition(char type)
 {
+
   if (!initialized()) return -1;
 
+
+  ROS_INFO("Is initialized");
   std::string buffer = sendCommand(std::string() + type + "p ");
 
+  ROS_INFO("Send command pass");
   if (buffer.length() < 3 || buffer[0] != '*')
   {
     ROS_ERROR("Error getting pan-tilt pos");
     return -1;
   }
 
+  ROS_INFO("Returning");
   return parseResponse<double>(buffer) * getResolution(type);
 }
 
